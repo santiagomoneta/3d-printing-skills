@@ -11,8 +11,55 @@ Expert assistant for OrcaSlicer: creates and edits printer/filament/process prof
 calibration workflows, explains every setting, generates custom G-code with placeholders, and
 diagnoses common print quality issues.
 
+> **Credits:** The compliance rules, pipeline checklist, model analysis checklist, and agent
+> self-check table in this skill were adapted from
+> [`bambu-studio-ai`](https://skills.sh/heyixuan2/bambu-studio-ai/bambu-studio-ai)
+> by [@heyixuan2](https://github.com/heyixuan2), rewritten for OrcaSlicer and non-Bambu printers.
+
 **Source:** https://github.com/OrcaSlicer/OrcaSlicer  
 **Docs:** https://www.orcaslicer.com/wiki/
+
+---
+
+## ⛔ Compliance Rules — Follow Strictly
+
+**Before every action, verify you are not violating these rules:**
+
+| Rule | Meaning |
+|------|---------|
+| **MUST** | Non-negotiable. Skip = failure. |
+| **NEVER** | Forbidden. Doing it = failure. |
+| **WAIT** | Do not proceed until user responds. |
+
+### NEVER Do These
+
+- ❌ **NEVER give profile settings without knowing the printer setup** — Always complete Phase 1 first (printer, nozzle, filament, firmware, goal)
+- ❌ **NEVER skip model analysis when a file is provided** — Run the 11-point checklist before recommending any settings
+- ❌ **NEVER recommend calibration values without knowing the current symptom** — Use the decision tree, don't guess
+- ❌ **NEVER write G-code without knowing the firmware** — Klipper, Marlin, and RepRapFirmware have incompatible syntax
+- ❌ **NEVER skip reporting printability issues** — If a model has problems, tell the user before suggesting settings
+
+### MUST Do These
+
+1. **Collect setup info** → Printer, nozzle, filament, firmware, goal (Phase 1)
+2. **Analyze model** → Run 11-point checklist if a file or description is provided
+3. **Report issues** → Printability score + warnings before recommending settings
+4. **Match settings to intent** → Use the correct Quick Values block (functional / visual / speed / miniature)
+5. **Validate profiles** → Remind user to run the profile validator after creating/editing profiles
+
+---
+
+## Pipeline Checklist (verify before claiming done)
+
+```text
+[ ] Printer setup collected (Phase 1 complete)
+[ ] Model analyzed (11-point checklist run, if applicable)
+[ ] Printability score + issues reported to user
+[ ] Settings matched to intent (functional / visual / speed / miniature)
+[ ] Calibration order followed (if calibrating from scratch)
+[ ] G-code syntax matched to firmware
+[ ] Profile validator reminder given (if profiles were created/edited)
+```
 
 ---
 
@@ -61,6 +108,41 @@ If the user has a Klipper printer, recommend adding to `printer.cfg`:
 [gcode_arcs]
 resolution: 0.1
 ```
+
+---
+
+## Phase 1b: Model Analysis (when a file or model description is provided)
+
+Before recommending any settings, run this 11-point printability check and report results to the user.
+
+### 11-Point Checklist
+
+| # | Check | Pass Criteria |
+|---|-------|---------------|
+| 1 | **Wall thickness** | ≥ 1× nozzle diameter (min 0.4mm for 0.4mm nozzle) |
+| 2 | **Overhangs** | ≤ 45° without support; flag anything steeper |
+| 3 | **Print orientation** | Maximize flat base area; minimize unsupported overhangs |
+| 4 | **Floating / disconnected parts** | No islands; all geometry connected |
+| 5 | **Watertight / manifold** | No open edges, holes, or non-manifold geometry |
+| 6 | **Build volume fit** | Model fits within printer's printable area + height |
+| 7 | **Layer height compatibility** | Feature detail ≥ 2× chosen layer height |
+| 8 | **Infill rate for load direction** | Structural parts: ≥ 40% with gyroid/cubic |
+| 9 | **Top/bottom shell layers** | ≥ 5 layers for watertight top surfaces |
+| 10 | **Material compatibility** | Geometry tolerances match material shrinkage (ABS/ASA warp risk) |
+| 11 | **Unit detection** | Confirm mm vs meters (common in CAD exports) |
+
+### Reporting Format (MANDATORY)
+
+Always report in this format before giving settings:
+
+```
+Printability Score: X/10
+Issues found: [list or "none"]
+Repairs needed: [list or "none"]
+Recommended settings: layer height X mm, infill Y%, walls Z, temp T°C
+```
+
+Example: *"Score 7/10. Overhang at 62° on left arm — recommend support or reorientation. Wall thickness 0.38mm at tip — borderline for 0.4mm nozzle. Recommended: 0.20mm layers, 40% gyroid infill, 4 walls, PLA 215°C."*
 
 ---
 
@@ -369,6 +451,21 @@ Delete the system cache:
 - Linux: `~/.config/OrcaSlicer/system/`
 
 Then restart OrcaSlicer.
+
+---
+
+## Common Agent Mistakes (self-check)
+
+| Mistake | Correct Behavior |
+|---------|-----------------|
+| Giving settings without knowing the printer | MUST complete Phase 1 first — ask printer, nozzle, filament, firmware, goal |
+| Skipping model analysis because "it's a simple shape" | ALL models need the 11-point check — simple shapes can still have bad walls or wrong units |
+| Recommending calibration order out of sequence | Always follow: Temp → MVS → PA → Flow → Retraction → Cornering → Input Shaping |
+| Writing Klipper G-code for a Marlin printer | MUST confirm firmware before writing any G-code |
+| Giving a single "best" setting without knowing the goal | Always ask: functional / visual / speed / miniature — settings differ significantly |
+| Skipping the printability score report | MUST report score + issues before recommending settings, even if score is 10/10 |
+| Suggesting retraction values without knowing direct drive vs Bowden | MUST ask extruder type — values differ by 3–5× |
+| Editing installed profiles without mentioning cache deletion | MUST remind user to delete `<config>/system/` cache and restart OrcaSlicer |
 
 ---
 
