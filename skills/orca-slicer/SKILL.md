@@ -255,11 +255,69 @@ acceleration:          limited by printer capability / input shaper result
 
 #### Miniatures / Fine Detail
 ```
-layer_height:          0.04–0.10mm (requires 0.2mm nozzle)
-line_width:            0.10–0.15mm
+layer_height:          0.06mm (optimal balance); 0.08mm acceptable; below 0.05mm diminishing returns
+nozzle:                0.2mm strongly recommended — 0.4mm loses fine detail
+line_width:            100% of nozzle diameter (0.20mm with 0.2mm nozzle)
+inner_wall_line_width: 120%
+outer_wall_line_width: 115%
+top_surface_line_width: 105%
 wall_loops:            3
-support:               tree support, small interface spacing
+wall_sequence:         inner-outer-inner (sandwich)
+wall_generator:        classic (not Arachne — fewer edge-case artifacts at small scales)
+sparse_infill_density: 20% gyroid; reduce to 15% only for single-piece supportless models
+outer_wall_speed:      35 mm/s
+inner_wall_speed:      55 mm/s
+top_surface_speed:     35 mm/s
+gap_infill_speed:      30 mm/s
+overhang_1_4_speed:    40 mm/s
+overhang_2_4_speed:    30 mm/s
+overhang_3_4_speed:    20 mm/s
+default_acceleration:  2000 mm/s² (outer wall + top surface: 1000 mm/s²)
+initial_layer_height:  0.12mm
+brim:                  outer_only, 6mm — critical for thin bases and multi-piece prints
+skirt:                 2 loops, 2.5mm distance — primes nozzle before model
+seam:                  scarf seam entire loop
+xy_contour_compensation: 0.05mm
+xy_hole_compensation:  -0.1mm
+resolution:            0.001mm
+reduce_crossing_wall:  enabled
+reduce_infill_retraction: enabled only with calibrated filament; disable if nozzle hits print
+bridge_flow:           0.85
 ```
+
+**Support settings for miniatures (critical):**
+```
+support_type:              tree(auto) organic/grid — NOT slim (slim skips interface generation)
+support_threshold_angle:   15° conservative; increase to 20–25° if spaghetti occurs, max 30°
+support_top_z_distance:    must be a multiple of layer_height:
+                             0.06mm layers → 0.18mm
+                             0.08mm layers → 0.24mm (easier removal)
+                             0.12mm layers → 0.12mm (cleaner surface, harder removal)
+support_bottom_z_distance: 0mm
+support_interface_spacing: 0.2mm
+support_base_pattern:      rectilinear-grid, spacing 3mm
+tree_support_tip_diameter: 1.2mm — CRITICAL: values below 1.0mm suppress interface generation,
+                           causing supports to fuse directly to the model
+tree_support_branch_diameter: 1.0mm
+tree_support_branch_distance: 1.0mm
+tree_support_wall_count:   2
+support_on_build_plate_only: true
+```
+
+**Miniature-specific workflow tips (from community testing):**
+- **Split complex models into parts** and orient each piece to minimize overhangs — bigger impact than any setting tweak
+- **Orientation first**: maximize flat base area, rotate arms/weapons to reduce unsupported angles
+- **Filament calibration** (flow ratio, PA, temperature) has more quality impact than going from 0.06mm to 0.05mm layers
+- **Dry filament**: 8h at 50°C for PLA before printing — moisture causes surface defects at 0.06mm layers
+- **Recommended filaments**: eSun PLA+ HS (better overhangs), Sunlu PLA+ 2.0 HS (better surface quality)
+- **Ironing**: off for miniatures (few flat surfaces); enable only for vehicles/terrain with large flat tops
+- **If nozzle hits print**: disable `reduce_infill_retraction` first — most common cause
+- **If support trees fall over**: check first layer adhesion — tree supports need a solid anchor
+- **If support interface is missing** in preview (dark green layer absent): increase `tree_support_tip_diameter` — without it, supports fuse to the model
+
+> **Source:** "Dungeons and Derps" HQ Profile v2.0 by u/ObscuraNox
+> ([r/FDMminiatures](https://www.reddit.com/r/FDMminiatures/comments/1rbnet7/high_quality_profile_version_20_is_here/)) —
+> settings and rationale extracted from the v2.0 JSON profile and full documentation post.
 
 ---
 
